@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>カタカナ タイピング</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #ffffff;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      user-select: none;
+    }
+    header {
+      width: 100%;
+      display: flex;
+      justify-content: flex-end;
+      padding: 10px 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    #logo {
+      height: 80px;
+    }
+    .logo-wrapper {
+      width: 100%;
+      display: flex;
+      justify-content: left;
+      align-items: left;
+      padding: 10px 0;
+    }
+    h1 {
+      margin-top: 30px;
+      font-size: 32px;
+      color: #1a73e8;
+    }
+    button {
+      font-size: 18px;
+      padding: 10px 20px;
+      margin-top: 10px;
+      background-color: #1a73e8;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    #game {
+      margin-top: 40px;
+      text-align: center;
+    }
+    #question {
+      font-size: 48px;
+      margin: 20px;
+    }
+    #input {
+      font-size: 24px;
+      padding: 10px;
+      width: 300px;
+    }
+    #feedback {
+      margin: 20px;
+      font-size: 20px;
+      height: 30px;
+    }
+    #timer {
+      font-size: 20px;
+      color: red;
+    }
+    #result {
+      font-size: 24px;
+      margin: 40px;
+    }
+    .options {
+      margin-top: 20px;
+      font-size: 18px;
+    }
+    .options input {
+      width: 60px;
+      text-align: center;
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  <div class="logo-wrapper">
+    <img id="logo" src="kana.png" alt="Logo" />
+  </div>
+</header>
+
+<h1>カタカナ タイピング ゲーム</h1>
+
+<!-- 옵션 -->
+<div class="options">
+  라운드 수: <input type="number" id="roundCount" value="10" min="1" max="40"> 개
+  &nbsp;&nbsp; 제한 시간: <input type="number" id="timeLimit" value="15" min="5" max="60"> 초
+</div>
+
+<!-- 단계 선택 버튼 -->
+<div id="stageButtons"></div>
+
+<div id="game" style="display:none;">
+  <div id="timer">15</div>
+  <div id="question">---</div>
+  <input id="input" type="text" onkeydown="handleKey(event)" autocomplete="off" />
+  <div id="feedback"></div>
+</div>
+
+<div id="result" style="display:none;">
+  <div id="resultText"></div>
+  <button onclick="restartGame()" style="margin-top: 20px; padding: 10px 20px; font-size: 18px; background-color: #1a73e8; color: white; border: none; border-radius: 5px;">🔁 다시 시작</button>
+</div>
+
+<script>
+  const katakana = ["カ","キ","ク","ケ","コ","サ","シ","ス","セ","ソ","タ","チ","ツ","テ","ト","ナ","ニ","ヌ","ネ","ノ","ハ","ヒ","フ","ヘ","ホ","マ","ミ","ム","メ","モ","ヤ","ユ","ヨ","ラ","リ","ル","レ","ロ"];
+  const halfKatakanapractice = [
+        { kana: "シュ", romaji: "SHU" },
+        { kana: "ショ", romaji: "SHO" },
+        { kana: "ジュ", romaji: "JU" },
+        { kana: "ジョ", romaji: "JO" },
+        { kana: "チュ", romaji: "CHU" },
+        { kana: "チョ", romaji: "CHO" },
+        { kana: "ニュ", romaji: "NYU" },
+        { kana: "ニョ", romaji: "NYO" },
+        { kana: "ヒュ", romaji: "HYU" },
+        { kana: "ヒョ", romaji: "HYO" },
+        { kana: "ミュ", romaji: "MYU" },
+        { kana: "ミョ", romaji: "MYO" },
+        { kana: "リュ", romaji: "RYU" },
+        { kana: "リョ", romaji: "RYO" },
+        { kana: "クァ", romaji: "KWA" },
+        { kana: "クィ", romaji: "KWI" },
+        { kana: "クェ", romaji: "KWE" },
+        { kana: "クォ", romaji: "KWO" }
+      ];
+
+const halfKatakana = [
+      { kana: "シュ" },
+      { kana: "ショ" },
+      { kana: "ジュ" },
+      { kana: "ジョ" },
+      { kana: "チュ" },
+      { kana: "チョ" },
+      { kana: "ニュ" },
+      { kana: "ニョ" },
+      { kana: "ヒュ" },
+      { kana: "ヒョ" },
+      { kana: "ミュ" },
+      { kana: "ミョ" },
+      { kana: "リュ" },
+      { kana: "リョ" },
+      { kana: "クァ" },
+      { kana: "クィ" },
+      { kana: "クェ" },
+      { kana: "クォ" }
+    ];
+
+
+  const fullWords = ["アイスクリーム","アイデア","アイロン","アウト","アクセサリー","アクセント","アジア","アドバイス","アドレス","アナウンサー","アナウンス","アニメ","アパート","アフリカ","アマチュア","アメリカ","アルコール","アルバイト","アルバム","アルミホイル","アレルギー","アンケート","アンテナ","イコール","イメージ","イヤリング","インキ","インク","インスタント","インタビュー","インターネット","ウイスキー","ウイルス","ウーマン","エアコン","エスカレーター","エチケット","エネルギー","エプロン","エレベーター","エンジン","オイル","オフィス","オペラ","オリンピック","オーケストラ","カセット","カタログ","カップ","カバー","カメラ","カラー","カレンダー","カレー","カロリー","カー","カーテン","カード","カーナビ","カーブ","カーペット","ガス","ガソリン","ガム","ガラス","キッチン","キャプテン","キャンセル","キャンパス","キャンプ","キロ","キログラム","キロメートル","ギター","ギャング","クイズ","クラシック","クラス","クラブ","クリスマス","クリック","クリーニング","クリーム","クーラー","グラス","グラム","グループ","ケーキ","ケース","ゲーム","コック","コップ","コピー","コミュニケーション","コレクション","コンサート","コンセント","コンビニ","コンピューター","コース","コーチ","コート","コード","コーヒー","コーラス","コール","ゴム","ゴール","サイズ","サイレン","サイン","サッカー","サラダ","サラリーマン","サンダル","サンドイッチ","サンプル","サービス","シャッター","シャツ","シャワー","ショップ","シリーズ","シーズン","シーツ","ジャム","ジャーナリスト","ジュース","ジョギング","ジーンズ","スイッチ","スカート","スカーフ","スキー","スクリーン","スクール","スケジュール","スケート","スタイル","スター","スタート","ステレオ","ステーキ","ステージ","ストッキング","ストップ","ストレス","ストーブ","ストーリー","スピーカー","スピーチ","スピード","スプーン","スポンサー","スポーツ","スーツ","スーパー","スープ","ズボン","セット","センター","セーター","セール","ゼロ","ソファー","ソフト","ソース","タイア","タイプ","タイプライター","タイヤ","タオル","タクシー","タバコ","ダイエット","ダイヤ","ダイヤモンド","ダンス","チェック","チケット","チーズ","チーム","テキスト","テスト","テニス","テレビ","テント","テンポ","テーブル","テーマ","デザート","デパート","データ","デート","トイレ","トップ","トラック","トランプ","ドア","ドライブ","ドラマ","ドレス","ナイフ","ナンバー","ニュース","ネクタイ","ネット","ノート","ハイキング","ハンカチ","ハンドバッグ","ハンドル","ハンバーグ","ハート","バイオリン","バイク","バイト","バケツ","バス","バター","バック","バッグ","バランス","バンド","パイプ","パイロット","パスポート","パソコン","パターン","パン","パンツ","パーティー","ビタミン","ビデオ","ビル","ビール","ピアノ","ピクニック","ピンク","ピンポン","ファイル","ファスナー","ファックス","ファーストフード","フィルム","フォーク","フライパン","フルーツ","ブラウス","ブラシ","ブレーキ","ブローチ","ブーム","プラス","プラスチック","プラン","プリント","プレゼント","プロ","プログラム","プール","ベッド","ベル","ベルト","ベンチ","ペット","ペン","ページ","ホテル","ホーム","ホームページ","ボタン","ボート","ボーナス","ボール","ポケット","ポスター","マイク","マイナス","マスク","マスター","マッチ","ママ","マラソン","マンション","マーケット","ミシン","ミルク","メニュー","メモ","メリット","メロン","メンバー","メートル","モデル","モーター","ユーモア","ヨット","ヨーロッパ","ライオン","ライター","ライト","ラケット","ラジオ","ランチ","リサイクル","リズム","リットル","リボン","リポート","リーダー","レコード","レストラン","レベル","レンタル","ロケット","ロボット","ワイン","ワンピース"];
+
+  let currentStage = 1;
+  let words = [];
+  let current = 0;
+  let correct = 0;
+  let incorrect = 0;
+  let wrongList = [];
+  let roundCount = 10;
+  let timeLimit = 15;
+  let timerInterval;
+  let answered = false;
+
+  function shuffle(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [array[i], array[j]] = [array[j], array[i]];
+    }
+  }
+
+  // 단계 데이터
+  const stages = {
+    1: { name: "1단계: 가타카나 연습", getWords: () => katakana },
+    2: { name: "2단계: 요음 연습", getWords: () => halfKatakanapractice },
+    3: { name: "3단계: 요음 테스트", getWords: () => halfKatakana },
+    4: { name: "4단계: 단어 테스트", getWords: () => fullWord },
+  
+  };
+
+  // 버튼 생성
+  window.onload = function() {
+    const btnContainer = document.getElementById("stageButtons");
+    for (let key in stages) {
+      const btn = document.createElement("button");
+      btn.textContent = `▶ ${stages[key].name}`;
+      btn.onclick = () => startGame(parseInt(key));
+      btnContainer.appendChild(btn);
+    }
+  };
+
+  function startGame(stage) {
+    roundCount = parseInt(document.getElementById("roundCount").value, 10) || 10;
+    timeLimit = parseInt(document.getElementById("timeLimit").value, 10) || 15;
+
+    currentStage = stage;
+    document.getElementById("stageButtons").style.display = "none";
+
+    if (stages[stage]) {
+      let stageWords = stages[stage].getWords();
+      shuffle(stageWords);
+      words = stageWords.slice(0, roundCount);
+    } else {
+      alert("존재하지 않는 단계입니다!");
+      return;
+    }
+
+    current = 0;
+    correct = 0;
+    incorrect = 0;
+    wrongList = [];
+    document.getElementById('result').style.display = 'none';
+    document.getElementById('game').style.display = 'block';
+    nextQuestion();
+  }
+
+  function nextQuestion() {
+    if (current >= words.length) {
+      endGame();
+      return;
+    }
+
+    const currentWord = words[current];
+    document.getElementById('input').value = '';
+    document.getElementById('feedback').innerText = '';
+    document.getElementById('question').innerText = currentWord;
+
+    let timeLeft = timeLimit;
+    answered = false;
+    updateTimer(timeLeft);
+
+    clearInterval(timerInterval);
+    timerInterval = setInterval(() => {
+      timeLeft--;
+      updateTimer(timeLeft);
+      if (timeLeft <= 0) {
+        clearInterval(timerInterval);
+        markWrong("⏱️ 시간 초과!", "", currentWord);
+      }
+    }, 1000);
+  }
+
+  function updateTimer(t) {
+    document.getElementById('timer').innerText = t;
+  }
+
+  function handleKey(event) {
+    if (event.key === 'Enter') {
+      checkInput();
+    }
+  }
+
+  function checkInput() {
+    const input = document.getElementById('input').value;
+    const currentWord = document.getElementById('question').innerText;
+
+    if (!answered && input === currentWord) {
+      answered = true;
+      clearInterval(timerInterval);
+      document.getElementById('feedback').innerText = '⭕ 정답!';
+      correct++;
+      current++;
+      setTimeout(nextQuestion, 1000);
+    } else if (!answered) {
+      answered = true;
+      clearInterval(timerInterval);
+      markWrong("❌ 오답!", input, currentWord);
+    }
+  }
+
+  function markWrong(message, inputValue, currentWord) {
+    document.getElementById('feedback').innerText = `${message} 정답: ${currentWord}`;
+    incorrect++;
+    wrongList.push({ question: currentWord, answer: inputValue || "(미입력)" });
+    current++;
+    setTimeout(nextQuestion, 1500);
+  }
+
+  function endGame() {
+    document.getElementById('game').style.display = 'none';
+
+    let wrongDetails = "";
+    if (wrongList.length) {
+      wrongDetails = "<br>❌ 틀린 문제:<br>";
+      wrongList.forEach((item, idx) => {
+        wrongDetails += `${idx + 1}. 문제: ${item.question} | 입력: ${item.answer}<br>`;
+      });
+    } else {
+      wrongDetails = "<br>모든 문제를 맞췄습니다!";
+    }
+
+    const resultText = `🎉 게임 종료!<br>
+      ✅ 정답 수: ${correct}<br>
+      ❌ 오답 수: ${incorrect}<br>
+      ${wrongDetails}`;
+
+    document.getElementById('resultText').innerHTML = resultText;
+    document.getElementById('result').style.display = 'block';
+  }
+
+  function restartGame() {
+    document.getElementById("stageButtons").style.display = "block";
+    document.getElementById('result').style.display = 'none';
+  }
+</script>
+
+</body>
+</html>
